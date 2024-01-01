@@ -124,5 +124,9 @@ $('#calc').on('click', () => {
   graph.appendChild(tree);
 });
 
+$('#max').on('click', () => {
+  let d = getProductInfo($('#product').val());
+  $('#amount').val(Math.floor(dayLong / d.time) * d.output);
+});
 
 
