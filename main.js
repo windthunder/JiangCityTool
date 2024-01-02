@@ -20,7 +20,6 @@
 // 建造： 螺丝廠1 <- 铁棒廠1 <- 铁锭廠1
 // 材料： 鐵棒 4 <- 铁锭8 <- 铁矿石 16
 
-import $ from 'jquery';
 import data from './data.js'
 import * as Plot from "@observablehq/plot";
 import './main.css';
@@ -34,13 +33,13 @@ function getProductInfo(product) {
 }
 
 // 計算處理
-function calc(product, amount) {
+function calc(product, amount, perfect) {
   // 輸出結果
-  return traverse({name: product, amount});
+  return traverse({name: product, amount}, perfect);
 }
 
 // 遞迴本體
-function traverse({name, amount}) {
+function traverse({name, amount}, perfect) {
   let target = getProductInfo(name);
   if(target.raw) {
     return {name: `${name}${amount}個`};
@@ -48,7 +47,7 @@ function traverse({name, amount}) {
   // 計算需要幾輪生產
   let round = Math.ceil(amount / target.output);
   // 計算總需時
-  let time = round * target.time;
+  let time = round * target.time * perfect;
   // 計算工廠數量
   let factory = Math.ceil(time / dayLong);
   // 將結果存入output
@@ -58,7 +57,7 @@ function traverse({name, amount}) {
   self.children = target.source.map((item) => {
     // 計算原料數量
     let sourceAmount = item.amount * round;
-    return traverse({name: item.name, amount: sourceAmount});
+    return traverse({name: item.name, amount: sourceAmount}, perfect);
   });
 
   return self;
@@ -77,15 +76,14 @@ function traverse2({name, children}, parent = null) {
 }
 
 // 產品名稱
-data.filter((item) => !item.raw).forEach((item) => {
-  $('#product').append(`<option value="${item.name}">${item.name}</option>`);
-});
+document.getElementById('product').innerHTML = data.filter((item) => !item.raw).map((item) => `<option value="${item.name}">${item.name}</option>`).join('');
 
 // 計算
-$('#calc').on('click', () => {
+document.getElementById('calc').addEventListener('click', () => {
+  const perfect = document.getElementById('perfect').checked ?  0.8 : 1;
   // graph && graph.destroy();
-  let product = $('#product').val();
-  let amount = parseInt($('#amount').val());
+  let product = document.getElementById('product').value;
+  let amount = parseFloat(document.getElementById('amount').value);
   // check amount is number
   if(isNaN(amount)) {
     alert('請輸入數字');
@@ -93,8 +91,7 @@ $('#calc').on('click', () => {
   }
 
   // 計算各個中間產品的數量 直到raw: true
-  let output = calc(product, amount);
-  console.log(output);
+  let output = calc(product, amount, perfect);
 
   output2 = [];
   traverse2(output);
@@ -105,7 +102,7 @@ $('#calc').on('click', () => {
     marginBottom: 100,
     marginRight: 200,
     marginLeft: 200,
-    width: 1000,
+    width: window.innerWidth,
     marks: [
       Plot.cluster(output2, {
         fontSize: 16,
@@ -124,9 +121,10 @@ $('#calc').on('click', () => {
   graph.appendChild(tree);
 });
 
-$('#max').on('click', () => {
-  let d = getProductInfo($('#product').val());
-  $('#amount').val(Math.floor(dayLong / d.time) * d.output);
+document.getElementById('max').addEventListener('click', () => {
+  const perfect = document.getElementById('perfect').checked ?  0.8 : 1;
+  let d = getProductInfo(document.getElementById('product').value);
+  document.getElementById('amount').value = Math.floor(dayLong / perfect / d.time) * d.output;
 });
 
 
